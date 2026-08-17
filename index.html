@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#101827">
+  <meta name="description" content="Kingdom Battles — build a realm, unlock a class tree, command the front.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Cpath fill='%23e56b45' d='M8 56V20l24-12 24 12v36H8Z'/%3E%3Cpath fill='%23f4ead5' d='M20 28h8v28h8V28h8v28h8V24L32 16 12 24v32h8V28Z'/%3E%3C/svg%3E">
+  <link rel="stylesheet" href="styles.css">
+  <title>Kingdom Battles</title>
+</head>
+<body>
+  <div class="app-shell">
+    <header class="topbar">
+      <div class="brand-lockup"><span class="brand-mark" aria-hidden="true">✦</span><div><p class="eyebrow">THE FRONTIER CHRONICLE</p><h1>Kingdom Battles</h1></div></div>
+      <div class="top-actions"><span class="save-status" id="saveStatus">Local save ready</span><button class="icon-button" id="fullscreenButton" type="button" aria-label="Enter fullscreen">⛶</button></div>
+    </header>
+    <main>
+      <section class="hero-strip" aria-labelledby="chapterTitle"><div><p class="eyebrow">CHAPTER I · THE ASHEN PASS</p><h2 id="chapterTitle">A small realm. A dangerous horizon.</h2><p class="hero-copy">Invest in the capital, shape your order, then take the field before the enemy learns your pattern.</p></div><div class="hero-seal" aria-hidden="true"><span>KB</span><i></i></div></section>
+      <nav class="view-tabs" aria-label="Game views"><button class="tab active" data-view="capital" type="button">Capital <span>01</span></button><button class="tab" data-view="battle" type="button">Battlefield <span>02</span></button></nav>
+      <section id="capitalView" class="view active-view" aria-labelledby="capitalHeading">
+        <div class="resource-row"><div class="resource"><span class="resource-icon">♛</span><div><b id="crownCount">120</b><small>CROWNS</small></div></div><div class="resource"><span class="resource-icon">◈</span><div><b id="renownCount">0</b><small>RENOWN</small></div></div><div class="tip-card" id="capitalTip"><strong>FIELD NOTE</strong><span>Build Barracks first to put a Scout on the board.</span></div></div>
+        <div class="capital-grid"><div class="capital-art panel"><div class="panel-heading"><div><p class="eyebrow">YOUR HOLDFAST</p><h3 id="capitalHeading">Cinderwatch</h3></div><span class="status-dot">● SECURE</span></div><div class="castle-scene"><div class="moon"></div><div class="mountain mountain-a"></div><div class="mountain mountain-b"></div><div class="capital-castle"><span class="flag">✦</span><div class="tower left"><i></i></div><div class="keep"><i></i><b></b></div><div class="tower right"><i></i></div></div><div class="fire fire-a"></div><div class="fire fire-b"></div></div><div class="capital-footer"><span>DAY <b id="dayCount">1</b></span><span class="divider"></span><span>GARRISON <b id="garrisonCount">0 / 3</b></span></div></div>
+          <div class="build-panel panel"><div class="panel-heading"><div><p class="eyebrow">DEVELOPMENT</p><h3>Raise the standard</h3></div><span class="count-label" id="buildingCount">0 / 5</span></div><div id="buildingList" class="card-list"></div></div></div>
+        <div class="tree-panel panel"><div class="panel-heading"><div><p class="eyebrow">THE ORDER TREE</p><h3>Combinations become doctrine</h3></div><span class="tree-key"><i class="key-dot unlocked"></i> ready <i class="key-dot locked"></i> locked</span></div><div id="treeList" class="tree-list"></div></div>
+        <div class="capital-actions"><button class="primary-button" id="enterBattle" type="button">Enter the battlefield <span>→</span></button><button class="secondary-button" id="resetButton" type="button">Reset local campaign</button></div>
+      </section>
+      <section id="battleView" class="view" aria-labelledby="battleHeading">
+        <div class="battle-header"><div><p class="eyebrow">THE ASHEN PASS · SKIRMISH 01</p><h2 id="battleHeading">Hold the line</h2></div><div class="battle-stats"><span><b id="battleCrownCount">120</b> crowns</span><span><b id="enemyHealth">100</b>% enemy keep</span></div></div>
+        <div class="battlefield panel"><div class="battle-sky"><span class="sun"></span><span class="cloud cloud-a"></span><span class="cloud cloud-b"></span></div><div class="keep-visual player-keep"><span class="keep-banner">✦</span><i></i><b></b></div><div class="keep-visual enemy-keep"><span class="keep-banner">◒</span><i></i><b></b></div><div class="lane"><div class="lane-line"></div><div id="unitLayer"></div><div class="battle-toast" id="battleToast">Choose a unit to deploy.</div></div><div class="battle-ground"></div></div>
+        <div class="battle-controls"><div class="roster panel"><div class="panel-heading"><div><p class="eyebrow">YOUR ROSTER</p><h3>Deploy a doctrine</h3></div><span class="count-label" id="rosterLabel">0 units</span></div><div id="rosterList" class="roster-list"></div></div><div class="command-panel panel"><p class="eyebrow">COMMAND</p><h3>Change the tempo</h3><p id="battleTip">Build a Barracks in the capital before deploying your first Scout.</p><div class="command-buttons"><button class="secondary-button" id="volleyButton" type="button">Keep volley <span>30 ♛</span></button><button class="secondary-button" id="retreatButton" type="button">Retreat to capital</button></div></div></div>
+      </section>
+    </main>
+    <footer><span>© CINDERWATCH CHRONICLE</span><span>Everything is saved on this device · <button id="installButton" class="text-button" type="button">Install game</button></span></footer>
+  </div>
+  <svg class="sprite-defs" aria-hidden="true"><defs><symbol id="crest-scout" viewBox="0 0 64 64"><path d="M32 5 53 17v24L32 59 11 41V17Z" fill="currentColor" opacity=".22"/><path d="m32 12 14 8v17L32 48 18 37V20Z" fill="none" stroke="currentColor" stroke-width="3"/><path d="m26 31 5 5 10-12" fill="none" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></symbol><symbol id="crest-archer" viewBox="0 0 64 64"><circle cx="32" cy="32" r="21" fill="currentColor" opacity=".22"/><circle cx="32" cy="32" r="14" fill="none" stroke="currentColor" stroke-width="3"/><path d="M32 15c9 10 9 24 0 34M15 32h34" fill="none" stroke="currentColor" stroke-width="3"/></symbol><symbol id="crest-lancer" viewBox="0 0 64 64"><path d="m13 48 20-32 5 19 14-3-18 20Z" fill="currentColor" opacity=".3"/><path d="m17 45 31-28M27 35l12 12" stroke="currentColor" stroke-width="4" stroke-linecap="round"/></symbol><symbol id="crest-ember" viewBox="0 0 64 64"><path d="M32 8c8 11 18 17 18 29a18 18 0 1 1-36 0c0-8 5-14 12-21-1 8 3 12 6 14 5-7 3-14 0-22Z" fill="currentColor"/></symbol></defs></svg>
+  <script src="game.js"></script>
+</body>
+</html>
