@@ -1,42 +1,39 @@
-# Kingdom Battles — fresh build design
+# Cinderwatch fresh-build contract
 
-This is a new implementation, not a continuation of the preserved `bb3c749` tree. The game is a touch-first lane strategy game where a capital investment changes the army available in the next short battle.
+This is a new implementation for the Kingdom Battles restart. It does not import code or history from the preserved `bb3c749` build.
+
+## Product direction
+
+A touch-first heraldic strategy game: spend capital income on a building family, unlock a doctrine only when its building combination is complete, then commit that economy to a short keep-pressure battle. The pencil reference inventory maps to 15 buildings and 12 playable doctrine families: Barracks/Scout, Fletchery/Archer, Mansion/Boss, Stables/Cavalry, Mage Tower/Wizard, Cave/Troll, Factory/Catapult, Mountaintop Cave/Dragon, Workshop/Ram, Alchemist Shop/Bomber, Iron Works/Cannon, Blacksmith/gear upgrade, Hall of Fame/renown, Pit to Hell/Infernal, Gateway to Heaven/capstone.
 
 ## Architecture
 
-- `index.html`: accessible application shell, capital and battle views, inline SVG sprite definitions.
-- `styles.css`: one token system and responsive layout; no external runtime dependency.
-- `game.js`: state machine, economy, prerequisite graph, battle simulation, local persistence, and view rendering.
-- `manifest.webmanifest` + `sw.js`: installable offline shell.
-- `docs/design-fresh.md`: this design and verification contract.
+- `index.html`: semantic capital and battlefield views, accessible controls, inline SVG symbols for distinct building/unit crests.
+- `styles.css`: named dusk-ink, parchment, ember, cobalt, moss, and brass tokens; responsive capital/tree/battle layout.
+- `game.js`: deterministic state machine. Versioned local state owns crowns, renown, day, buildings, doctrine roster, and battle. Building income and upkeep create a meaningful capital trade-off. Each battle turn resolves player action, enemy pressure, and victory/defeat. Command boost protects the next tick; volley trades crowns for keep damage.
+- `manifest.webmanifest`, `sw.js`: installable offline shell, cache-first static assets.
 
+```text
+capital income + buildings -> prerequisite combinations -> doctrine roster
+          ^                                              |
+          |                                              v
+ victory reward / save <- retreat <- deterministic battle turns -> enemy pressure
 ```
-capital -> buildings/resources -> class tree prerequisites -> roster -> battle lane
-   ^                                                       |
-   +-------- victory reward / defeat-safe local save <-----+
-```
 
-## Visual system
+## Verification contract
 
-Dusk ink `#101827`, parchment `#f4ead5`, ember `#e56b45`, cobalt `#3567d4`, moss `#6e9d62`, and brass `#e5b85c`. Display uses `Cinzel Decorative` when available with Georgia fallback; body uses system sans. The signature is the animated heraldic unit sigil: each unit card carries a colored SVG crest that pulses when its class-tree node unlocks.
+1. Freshness: `git log` has only the new repo's history and contains no preserved commit; local source is structurally distinct from the old 5-building/4-node implementation.
+2. Capital/economy: browser trace buys Barracks, Fletchery, and Stables; resource display changes; interval income/upkeep is visible; localStorage contains version 2 state.
+3. Class tree: browser assertions observe locked combinations, then unlock Scout/Archer/Cavalry after required building purchases; rendered tree contains all 12 doctrines and all 15 family names.
+4. Battle: browser trace enters battle, deploys units, uses Command boost and Keep volley, observes turn/enemy/player state, and reaches both victory and defeat using deterministic fixture interactions.
+5. Art/design: source and rendered screenshots show inline SVG crests with multiple colors, responsive layout, focusable controls, and reduced-motion behavior.
+6. PWA/offline: localhost responses for manifest and service worker; cache keys include shell; offline reload serves `index.html`.
+7. Save/fullscreen: reload preserves version 2 capital state; fullscreen click records resolved or explicit unsupported result.
+8. Quality/delivery: console has zero page errors; 375px and desktop layouts render; the new commit is pushed to remote main through the gated lane and the live deployment id/head are independently checked.
 
-## Gameplay
+## Risks and mitigations
 
-Capital starts with 120 crowns and generates 2 crowns every 2 seconds. Barracks unlocks Scout; Watchtower unlocks Archer; Stable unlocks Lancer; Workshop requires Barracks; Sanctum requires Watchtower + Workshop. Ember Knight requires Stable + Workshop + Lancer. The battle is a single lane: player keep and enemy keep, income, deployable roster, direct command boost, keep volley, and win/lose terminal states. Tips change with state and are persisted only locally.
-
-## Verification plan
-
-1. System questions: live `inspect` output and Notion Result.
-2. Freshness: new directory, initial commit history, and gated main push with a head different from `bb3c749`.
-3. Capital/tree: browser assertions buy buildings and show prerequisite locked/unlocked nodes.
-4. Battle: browser clicks deploy, command, volley, retreat, and observes state changes; screenshots cover capital, battle, win/lose.
-5. PWA/save: fetch manifest/service worker, clear/reload and inspect localStorage, then reload from an offline-capable cached shell.
-6. Responsive/accessibility: 375px and desktop screenshots, keyboard focus and reduced-motion CSS.
-7. Live delivery: remote main head plus deployment id and live URL.
-
-## Risks and fallbacks
-
-- Source drawing is a historical reference only; if no additional image is recoverable, preserve the trace and use original SVG silhouettes rather than copying old code.
-- Browser lease loss means wait/replan, never reuse the preserved build.
-- Vercel or GitHub auth failure is reported as an external blocker with raw command evidence.
-- Offline network cannot run deployment APIs; the game is deliberately local-only and service-worker cached.
+- Historical images are not all recoverable in this worktree: use the recorded family inventory and only available references, state the limitation rather than inventing images.
+- Service workers require HTTP: verify through localhost, not `file://`.
+- Browser fullscreen can be denied in automation: record the API result, not a prose claim.
+- GitHub/Vercel credentials may be unavailable: retain raw command evidence and block delivery rather than claiming it.
