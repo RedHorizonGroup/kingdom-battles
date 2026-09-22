@@ -1,0 +1,40 @@
+{
+  "label": "preview",
+  "base": "https://kingdom-battles-e953jd25c-red-horizons-projects.vercel.app",
+  "results": {
+    "title-instructions-worldmap": {
+      "pass": true,
+      "detail": "title='Kingdom Battles\\nCinderwatch' play/instructions/load present, 7 tips, 6 level nodes"
+    },
+    "capital-economy": {
+      "pass": true,
+      "detail": "buildings=['barracks', 'fletchery', 'stables'] crowns 2000->101775 v4-save=True"
+    },
+    "class-tree-12-doctrines-15-families": {
+      "pass": true,
+      "detail": "doctrine cards=12, family chips=15, lineage nodes=48"
+    },
+    "deterministic-battle-victory-and-defeat": {
+      "pass": true,
+      "detail": "victory=victory; defeat=defeat"
+    },
+    "art-responsive-reduced-motion": {
+      "pass": true,
+      "detail": "generated imgs loaded=15 all-nonzero=True, reduced-motion=True, mobile-stacked=True"
+    },
+    "pwa-offline-cache": {
+      "pass": true,
+      "detail": "manifest=Kingdom Battles served=200 sw-registrations=1 caches=['kingdom-battles-cinderwatch-v4']"
+    },
+    "save-reload-fullscreen": {
+      "pass": true,
+      "detail": "crowns after reload=4321 (want 4321), fullscreen=fullscreen"
+    },
+    "zero-console-errors": {
+      "pass": true,
+      "detail": "console errors=[] page errors=[]"
+    }
+  },
+  "passed": 8,
+  "total": 8
+}
