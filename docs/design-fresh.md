@@ -8,7 +8,7 @@ A touch-first heraldic strategy game: spend capital income on a building family,
 
 ## Architecture
 
-- `index.html`: semantic capital and battlefield views, accessible controls, inline SVG symbols for distinct building/unit crests, and the `BUILD 3` identity marker.
+- `index.html`: semantic capital and battlefield views, accessible controls, inline SVG symbols for distinct building/unit crests, and the `BUILD 4` identity marker.
 - `styles.css`: named dusk-ink, parchment, ember, cobalt, moss, and brass tokens; responsive capital/tree/battle layout.
 - `game.js`: deterministic state machine. Versioned local state owns crowns, renown, day, buildings, doctrine roster, and battle. Building income and upkeep create a meaningful capital trade-off. Each battle turn resolves player action, enemy pressure, and victory/defeat. Command boost protects the next tick; volley trades crowns for keep damage.
 - `manifest.webmanifest`, `sw.js`: installable offline shell, cache-first static assets.
@@ -24,18 +24,18 @@ capital income + buildings -> prerequisite combinations -> doctrine roster
 
 - The restart path is `fresh-kingdom-battles/`, an independently initialized repository directory. Its history contains only the fresh-build commits `a3e8e7c` and `affc690`; the rejected runtime commit `bb3c749` is not an ancestor and no source file is copied from it.
 - The available drawing-derived reference is represented by the recorded 15-family inventory below. Each reference has a visible application: the building card, prerequisite node, inline SVG crest, and its matching doctrine or capital-system behavior. No unavailable image is silently presented as recovered.
-- The browser QA manifest must bind one identity marker (`BUILD 3`), the pushed remote head, the Vercel deployment id, and the live URL before delivery is called complete.
+- The browser QA manifest must bind one identity marker (`BUILD 4`), the pushed remote head, the Vercel deployment id, and the live URL before delivery is called complete.
 
 ## Verification contract
 
 1. Freshness: verify `git log --all --oneline`, `git merge-base --is-ancestor bb3c749 HEAD` failure, and the absence of preserved runtime identifiers in the fresh source. Record the empty-path/independent-history check before any delivery.
-2. Capital/economy: browser trace buys Barracks, Fletchery, and Stables; resource display changes; interval income/upkeep is visible; localStorage contains version 3 state.
+2. Capital/economy: browser trace buys Barracks, Fletchery, and Stables; resource display changes; interval income/upkeep is visible; localStorage contains version 4 state.
 3. Class tree: browser assertions observe all 12 doctrines and all 15 family names. For every doctrine, its full `requires` array must be visible in the locked hint and unlocking must occur only after every required family is owned.
 4. Battle: browser trace enters battle, deploys units, uses Focus lane, Rally, and Keep volley, observes visible turn/enemy/player state and unit markers, and reaches both victory and defeat with the deterministic fixture interactions.
 5. Art/design: source and rendered screenshots show distinct inline SVG crests for all 15 building families and 12 doctrines, multiple colors, responsive layout, focusable controls, and reduced-motion behavior.
-6. PWA/offline: localhost responses for manifest and service worker; cache keys include all shell assets; offline reload serves `index.html` and the service worker cache version is `cinderwatch-v3`.
-7. Save/fullscreen: reload preserves version 3 capital state; fullscreen click records resolved or explicit unsupported result; install control handles both browser prompt and fallback instructions.
-8. Quality/delivery: console has zero page errors; 375px and desktop layouts render; the delivery manifest binds the new remote `main` head, deployment id, embedded `BUILD 3` marker, and live URL, all independently checked.
+6. PWA/offline: localhost responses for manifest and service worker; cache keys include all shell assets; offline reload serves `index.html` and the service worker cache version is `cinderwatch-v4`.
+7. Save/fullscreen: reload preserves version 4 capital state; fullscreen click records resolved or explicit unsupported result; install control handles both browser prompt and fallback instructions.
+8. Quality/delivery: console has zero page errors; 375px and desktop layouts render; the delivery manifest binds the new remote `main` head, deployment id, embedded `BUILD 4` marker, and live URL, all independently checked.
 
 ## Complete family/prerequisite matrix
 
@@ -63,7 +63,7 @@ The battle starts at 100 enemy keep / 100 player keep. Every action increments `
 
 ## Delivery manifest
 
-Before claiming delivery, record a JSON or markdown manifest containing: `repo=RedHorizonGroup/kingdom-battles`, `branch=main`, `remote_head=<sha>`, `embedded_marker=BUILD 3`, `deployment_id=<vercel id>`, and `live_url=<url>`. The live browser must assert both the marker and the served behavior; a remote head or URL without the deployment id is insufficient.
+Before claiming delivery, record a JSON or markdown manifest containing: `repo=RedHorizonGroup/kingdom-battles`, `branch=main`, `remote_head=<sha>`, `embedded_marker=BUILD 4`, `deployment_id=<vercel id>`, and `live_url=<url>`. The live browser must assert both the marker and the served behavior; a remote head or URL without the deployment id is insufficient.
 
 ## Risks and mitigations
 
