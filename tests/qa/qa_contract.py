@@ -33,7 +33,9 @@ with sync_playwright() as p:
     page.on("console", lambda m: console_errors.append(m.text) if m.type == "error" else None)
     page.on("pageerror", lambda e: page_errors.append(str(e)))
 
-    page.goto(BASE + "/index.html", wait_until="networkidle")
+    # ?kbdev=1 opts into the dev-mode QA hooks (KB.grantCrowns / KB.setState),
+    # which a normal player load does not have. See README "Dev mode".
+    page.goto(BASE + "/index.html?kbdev=1", wait_until="networkidle")
     page.evaluate("() => { localStorage.clear(); }")
     page.reload(wait_until="networkidle")
 

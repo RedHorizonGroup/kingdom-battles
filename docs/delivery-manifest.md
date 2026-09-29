@@ -46,3 +46,27 @@ preview. The preview was produced with `vercel deploy` from the branch working t
 production with `vercel --prod` after merging to `main`. The non-circular sequence holds:
 the preview proved the build, production proved the delivery, and point 8 was evaluated on
 the production URL.
+
+## 2026-09-29 — crown cheat removed, battle save no longer forfeited (branch fix/crown-cheat-and-battle-save-integrity)
+
+```yaml
+branch: fix/crown-cheat-and-battle-save-integrity
+base: main (0cf9584)
+scope: game.js, tests/qa/, README.md, docs/delivery-manifest.md
+status: verified-by-execution
+```
+
+- **Defect.** `game.js` bound a global `keydown` handler that added 2 crowns per `m`
+  press with no dev flag, no cap and no view gate, and `save()` wrote
+  `{ ...state, battle: null }`, so any save during a battle silently discarded that
+  battle. `window.KB.grantCrowns` / `setState` were exported to every player load.
+- **Fix.** The `m` handler is deleted. `grantCrowns` and `setState` are attached only
+  when the URL carries `?kbdev=1`. `save()` persists the live battle and `load()`
+  restores it, so a mid-battle refresh resumes the fight; an ended battle is dropped on
+  load (its reward is already banked, so it can never pay out twice) and a corrupt or
+  partial `battle` object is discarded rather than rendered.
+- **Regression test.** `tests/qa/run-regression.sh` exits 0 on this branch and non-zero
+  against `game.js` at `703e6b2`: 8/8 checks pass on the fixed build, 5 fail on the
+  pre-fix build (m-key crowns, absent hooks, m-key in battle, battle refresh, single
+  payout). `tests/qa/qa_contract.py` is unchanged apart from its `?kbdev=1` opt-in and
+  still passes 8/8.

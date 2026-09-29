@@ -8,6 +8,9 @@ const KEY_V3 = 'kingdom-battles-cinderwatch-v3';
 const MAX_GARRISON = 8;
 const LEVELS = 6;
 const CACHE_NAME = 'cinderwatch-v4';
+/* Dev mode: only a URL carrying ?kbdev=1 turns on the write hooks on window.KB.
+ * Off everywhere else, so a normal load cannot mint or rewrite state. */
+const DEV = new URLSearchParams(location.search).get('kbdev') === '1';
 
 const initial = {
   version: 4,
@@ -116,17 +119,43 @@ function migrateV3(saved) {
     units: saved.units || []
   };
 }
+/* A save is attacker-free but not trusted: anything that is not a whole battle
+ * is dropped, so a corrupt or partial `battle` can never crash render() or
+ * strand the player on an inert battle view. */
+function sanitizeBattle(raw) {
+  const num = value => typeof value === 'number' && Number.isFinite(value);
+  if (!raw || typeof raw !== 'object' || Array.isArray(raw)) return null;
+  if (!num(raw.enemy) || !num(raw.player) || !num(raw.turn) || !Array.isArray(raw.units)) return null;
+  return {
+    enemy: Math.max(0, raw.enemy), player: Math.max(0, raw.player), turn: Math.max(0, raw.turn),
+    units: raw.units.filter(u => u && typeof u.id === 'string' && num(u.power)).slice(0, MAX_GARRISON),
+    boost: num(raw.boost) ? Math.max(0, raw.boost) : 0,
+    focused: !!raw.focused,
+    controlled: Number.isInteger(raw.controlled) ? raw.controlled : -1,
+    ended: raw.ended === 'victory' || raw.ended === 'defeat' ? raw.ended : ''
+  };
+}
 function load() {
   try {
     const v4 = JSON.parse(localStorage.getItem(KEY) || 'null');
-    if (v4 && v4.version === 4) return { ...initial, ...v4, battle: null };
+    if (v4 && v4.version === 4) {
+      const battle = sanitizeBattle(v4.battle);
+      /* An already-ended battle is not resumed: its reward is banked in
+       * `cleared`, so dropping it here is what stops a reload paying twice.
+       * With no live battle the battle view would be inert, so fall back. */
+      const restored = { ...initial, ...v4, battle: battle && !battle.ended ? battle : null };
+      if (!restored.battle && restored.view === 'battle') restored.view = 'world';
+      return restored;
+    }
     const v3 = JSON.parse(localStorage.getItem(KEY_V3) || 'null');
     if (v3 && v3.version === 3) return migrateV3(v3);
     return { ...initial };
   } catch (e) { return { ...initial }; }
 }
 function save() {
-  try { localStorage.setItem(KEY, JSON.stringify({ ...state, battle: null })); } catch (e) { /* storage may be unavailable */ }
+  /* The live battle is persisted on purpose: a mid-battle refresh used to write
+   * battle: null here, which silently forfeited the fight and its progress. */
+  try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) { /* storage may be unavailable */ }
   const status = document.querySelector('#saveStatus');
   if (status) status.textContent = 'Saved on this device';
 }
@@ -404,10 +433,6 @@ document.addEventListener('click', event => {
   if (t.closest('#installButton')) { if (deferredInstall) deferredInstall.prompt(); else { const b = $('#installButton'); if (b) b.textContent = 'Use your browser menu to install'; } return; }
 });
 
-window.addEventListener('keydown', event => {
-  if (event.key === 'm') { state.crowns += 2; save(); render(); }
-});
-
 setInterval(() => {
   if (state.view === 'capital' || state.view === 'tree' || state.view === 'world') {
     state.crowns = Math.max(0, state.crowns + Math.max(1, income()));
@@ -418,7 +443,10 @@ setInterval(() => {
 if (window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('reduced-motion');
 if ('serviceWorker' in navigator) navigator.serviceWorker.register('sw.js').catch(() => {});
 
-/* Deterministic QA hook: the Playwright contract drives these. */
+/* Deterministic QA hook: the Playwright contract drives these.
+ * grantCrowns and setState cost nothing, so they are dev-mode only — a normal
+ * load has no way to mint crowns from the console. Do not re-export them
+ * unconditionally; the regression test in tests/qa asserts their absence. */
 window.KB = {
   get state() { return state; },
   cacheName: CACHE_NAME,
@@ -427,9 +455,12 @@ window.KB = {
   doctrines: () => doctrines.map(d => d.id),
   buy, buyUpgrade, claimAchievement, recruit, enterBattle, enterLevel,
   deploy, holdTurn, focusLane, seizeControl, rally, volley, retreat,
-  newBattle, show, grantCrowns: n => { state.crowns += n; save(); render(); },
-  setState: patch => { state = { ...state, ...patch }; save(); render(); }
+  newBattle, show
 };
+if (DEV) {
+  window.KB.grantCrowns = n => { state.crowns += n; save(); render(); };
+  window.KB.setState = patch => { state = { ...state, ...patch }; save(); render(); };
+}
 
 render();
 show(state.view || 'title');
