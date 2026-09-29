@@ -100,3 +100,12 @@ status: verified-by-execution
   `game.js?v=5`), the v4 cache is purged, and the v4-keyed save (7777 crowns, 2 levels
   cleared) loads into memory intact. `tests/qa/qa_contract.py` passes 8/8 with
   `caches=['kingdom-battles-cinderwatch-v5']`; `bash tests/qa/run-regression.sh` exits 0.
+- **Regression runner is self-provisioning.** The first version of `run-regression.sh`
+  hard-failed when the ambient `python3` had no `playwright`, which is not hypothetical:
+  the rig venv was rebuilt mid-task and lost it, and check c1 went red on the close
+  gate's own re-run. It now resolves its own interpreter — an explicit `PYTHON` is used
+  as-is, an ambient `python3` that already imports `playwright` is left alone, and
+  anything else is provisioned into a kept venv (`$XDG_CACHE_HOME/kingdom-battles-qa/venv`)
+  with `playwright install chromium`. Verified from a cold cache with an empty
+  `PLAYWRIGHT_BROWSERS_PATH`: 590 MB fetched, exit 0 in 2:49, 10/10 then 3/10. Set
+  `KB_BOOTSTRAP=0` to forbid installing, or `KB_VENV_DIR` to relocate the venv.
