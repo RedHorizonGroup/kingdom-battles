@@ -3,11 +3,12 @@
  */
 'use strict';
 
-const KEY = 'kingdom-battles-cinderwatch-v4';
+const KEY = 'kingdom-battles-cinderwatch-v4'; // save key: frozen on v4 on purpose. Renaming it
+// orphans every returning player's progress. Bump CACHE_NAME, never this.
 const KEY_V3 = 'kingdom-battles-cinderwatch-v3';
 const MAX_GARRISON = 8;
 const LEVELS = 6;
-const CACHE_NAME = 'cinderwatch-v4';
+const CACHE_NAME = 'kingdom-battles-cinderwatch-v5';
 /* Dev mode: only a URL carrying ?kbdev=1 turns on the write hooks on window.KB.
  * Off everywhere else, so a normal load cannot mint or rewrite state. */
 const DEV = new URLSearchParams(location.search).get('kbdev') === '1';

@@ -136,7 +136,7 @@ with sync_playwright() as p:
       const keys = await caches.keys();
       return {manifest: m.name, served: r.status, registrations: reg.length, caches: keys};
     }""")
-    pwa_ok = pwa["served"] == 200 and pwa["registrations"] >= 1 and "kingdom-battles-cinderwatch-v4" in pwa["caches"]
+    pwa_ok = pwa["served"] == 200 and pwa["registrations"] >= 1 and "kingdom-battles-cinderwatch-v5" in pwa["caches"]
     check("pwa-offline-cache", pwa_ok, f"manifest={pwa['manifest']} served={pwa['served']} sw-registrations={pwa['registrations']} caches={pwa['caches']}")
 
     # -- 7 save + fullscreen -------------------------------------------------

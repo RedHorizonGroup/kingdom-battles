@@ -70,3 +70,33 @@ status: verified-by-execution
   pre-fix build (m-key crowns, absent hooks, m-key in battle, battle refresh, single
   payout). `tests/qa/qa_contract.py` is unchanged apart from its `?kbdev=1` opt-in and
   still passes 8/8.
+
+## 2026-09-29 — cache and asset version bumped so the fixed game.js reaches returning players (branch fix/crown-cheat-and-battle-save-integrity)
+
+```yaml
+branch: fix/crown-cheat-and-battle-save-integrity
+base: main (0cf9584) + 4c4326d, 8a4a355
+scope: sw.js, index.html, game.js, tests/qa/qa_contract.py, docs/delivery-manifest.md
+status: verified-by-execution
+```
+
+- **Defect.** The fix above shipped new bytes for `game.js`, but nothing invalidated the
+  service worker. `sw.js` kept the cache name `kingdom-battles-cinderwatch-v4` and
+  precached `./game.js?v=4`, and `index.html` requested `game.js?v=4` — the URL the v4
+  cache already held. A returning player was therefore served the **pre-fix** `game.js`
+  from cache and still had the `m` crown cheat reachable, with no way to tell.
+- **Fix.** `sw.js` `CACHE` is now `kingdom-battles-cinderwatch-v5`, `kingdom-battles-cinderwatch-v4`
+  is prepended to `OLD_CACHES` so `activate` deletes it, and the precached asset is
+  `./game.js?v=5`; `index.html` requests `game.js?v=5`. `game.js` `CACHE_NAME` moves to
+  `kingdom-battles-cinderwatch-v5` so it names the cache the worker actually opens.
+- **Save key deliberately unchanged.** The localStorage save key stays
+  `kingdom-battles-cinderwatch-v4` (`game.js` `KEY`). It used to be the same *string* as
+  the old cache name, so a find-and-replace bump would have silently renamed the save
+  key and reset every returning player's campaign. `KEY` now carries a comment saying so.
+- **Verified by execution.** A returning-player replay, on one origin and one browser
+  profile: load the pre-fix build (`sw.js` v4, `game.js` at `703e6b2`, with the `m` cheat)
+  and seed a real v4-keyed save; then swap the served tree to this build and reload. The
+  player receives the fixed `game.js` (`m` cheat gone, `KB.grantCrowns` absent, script
+  `game.js?v=5`), the v4 cache is purged, and the v4-keyed save (7777 crowns, 2 levels
+  cleared) loads into memory intact. `tests/qa/qa_contract.py` passes 8/8 with
+  `caches=['kingdom-battles-cinderwatch-v5']`; `bash tests/qa/run-regression.sh` exits 0.

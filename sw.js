@@ -1,7 +1,7 @@
-const CACHE = 'kingdom-battles-cinderwatch-v4';
-const OLD_CACHES = ['kingdom-battles-cinderwatch-v3', 'kingdom-battles-cinderwatch-v2', 'kingdom-battles-fresh-v1'];
+const CACHE = 'kingdom-battles-cinderwatch-v5';
+const OLD_CACHES = ['kingdom-battles-cinderwatch-v4', 'kingdom-battles-cinderwatch-v3', 'kingdom-battles-cinderwatch-v2', 'kingdom-battles-fresh-v1'];
 const ASSETS = [
-  './', './index.html', './styles.css', './game.js?v=4', './manifest.webmanifest', './sw.js', './favicon.svg',
+  './', './index.html', './styles.css', './game.js?v=5', './manifest.webmanifest', './sw.js', './favicon.svg',
   './assets/generated/title-crest.png',
   './assets/generated/doctrine-scout.png', './assets/generated/doctrine-archer.png',
   './assets/generated/doctrine-boss.png', './assets/generated/doctrine-cavalry.png',
