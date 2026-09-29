@@ -26,11 +26,24 @@ is persisted with the save, so a refresh mid-fight resumes it rather than forfei
 ## Tests
 
 ```bash
-python3 -m pip install playwright && python3 -m playwright install chromium
 bash tests/qa/run-regression.sh
 ```
 
+That is the whole setup. The runner **provisions its own environment**: if the ambient
+`python3` cannot `import playwright` it builds a venv (`~/.cache/kingdom-battles-qa/venv`),
+pip installs playwright into it and fetches the chromium build the test drives, so the
+check reproduces on a clean machine. The venv is kept, so only the first run pays for it,
+and a `python3` that already has playwright is used as-is with nothing installed.
+
 The runner serves the working tree, drives the real page, and then stages the pre-fix
 `game.js` and runs the same test against it, so it only reports success if the test both
-passes on the fixed build and fails on the broken one. Point it at any checkout with
-`KB_GAME_ROOT=<dir> bash tests/qa/run-regression.sh`.
+passes on the fixed build and fails on the broken one.
+
+- `PYTHON=<interpreter>` — use that interpreter as-is; it must already import playwright,
+  and the runner provisions nothing on its behalf.
+- `KB_BOOTSTRAP=0` — never install anything; if the ambient `python3` has no playwright
+  the runner fails with that message instead of building a venv.
+- `KB_BASE_PYTHON=<interpreter>` — interpreter the venv is built from (default `python3`).
+- `KB_VENV_DIR=<dir>` — where that venv lives (default `~/.cache/kingdom-battles-qa/venv`).
+- `KB_GAME_ROOT=<dir> bash tests/qa/run-regression.sh` — run phase 1 only, against any
+  checkout you like.

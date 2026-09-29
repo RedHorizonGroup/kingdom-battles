@@ -10,23 +10,76 @@
 #   -> must FAIL. A regression test that cannot fail is worthless, so the
 #   runner proves it can before reporting success.
 #
+# The runner is self-contained: a machine with no playwright gets one. When the
+# ambient python3 cannot import playwright it provisions a venv (default
+# ~/.cache/kingdom-battles-qa/venv), pip installs playwright into it and fetches
+# the chromium build the test drives. The venv is kept, so only the first run
+# pays for it, and the phases below are unchanged.
+#
 # Env:
-#   PYTHON=<interpreter>        default python3 (needs `playwright` installed)
+#   PYTHON=<interpreter>        use it as-is; it must already import playwright
+#   KB_BOOTSTRAP=0              never install anything; fail if playwright is missing
+#   KB_BASE_PYTHON=<interp>     interpreter to provision the venv from (default python3)
+#   KB_VENV_DIR=<dir>           where that venv lives (default ~/.cache/kingdom-battles-qa/venv)
 #   KB_GAME_ROOT=<dir>          serve this tree instead; skips phase 2
 #   KB_PREFIX_GAME_JS=<file>    use this file as the pre-fix game.js in phase 2
 set -uo pipefail
 
 HERE="$(cd "$(dirname "$0")" && pwd)"
 ROOT="$(cd "$HERE/../.." && pwd)"
-PYTHON="${PYTHON:-python3}"
+PYTHON="${PYTHON:-}"
 WORK="$(mktemp -d "${TMPDIR:-/tmp}/kb-regression.XXXXXX")"
 trap 'rm -rf "$WORK"; jobs -p | xargs -r kill 2>/dev/null' EXIT
+VENV_DIR="${KB_VENV_DIR:-${XDG_CACHE_HOME:-${HOME:-/tmp}/.cache}/kingdom-battles-qa/venv}"
 
 fail() { printf '\n[FAIL] %s\n' "$1"; exit 1; }
+note() { printf '%s\n' "$1"; }
+can_import() { "$1" -c 'import playwright' >/dev/null 2>&1; }
+log_tail() { tail -3 "$WORK/venv.log" 2>/dev/null; }
 
-if ! "$PYTHON" -c 'import playwright' 2>/dev/null; then
-  fail "$PYTHON cannot import playwright — install it (pip install playwright && python3 -m playwright install chromium)"
-fi
+# Chooses the interpreter the whole run uses, and provisions it when nothing
+# usable is on the machine. Sets PYTHON; never returns without it.
+resolve_python() {
+  local base vp
+  if [ -n "$PYTHON" ]; then
+    can_import "$PYTHON" || fail "PYTHON=$PYTHON cannot import playwright — install it there (python3 -m pip install playwright && python3 -m playwright install chromium), or unset PYTHON to let this runner provision one"
+    note "python: $PYTHON (from PYTHON — nothing provisioned)"
+    return 0
+  fi
+  base="${KB_BASE_PYTHON:-python3}"
+  command -v "$base" >/dev/null 2>&1 || fail "no '$base' on PATH to provision from — install python3, or set PYTHON=<interpreter> that already imports playwright"
+  if can_import "$base"; then
+    PYTHON="$(command -v "$base")"
+    note "python: $PYTHON (already imports playwright)"
+    return 0
+  fi
+  if [ "${KB_BOOTSTRAP:-1}" = 0 ]; then
+    fail "$base cannot import playwright and KB_BOOTSTRAP=0, so nothing was installed
+       drop KB_BOOTSTRAP to provision $VENV_DIR, or set PYTHON=<interpreter> to one that has playwright:
+       python3 -m pip install playwright && python3 -m playwright install chromium"
+  fi
+  vp="$VENV_DIR/bin/python"
+  note "python: $base ($("$base" -c 'import sys; print(sys.version.split()[0])')) cannot import playwright"
+  if can_import "$vp"; then
+    note "venv: $VENV_DIR already has playwright, reusing it"
+  else
+    note "bootstrapping: venv at $VENV_DIR, playwright + its chromium build (needs network once)"
+    "$base" -m venv "$VENV_DIR" >>"$WORK/venv.log" 2>&1 \
+      || fail "could not create a venv at $VENV_DIR — $base needs its venv module (apt install python3-venv):
+$(log_tail)"
+    "$vp" -m pip install --quiet --disable-pip-version-check playwright >>"$WORK/venv.log" 2>&1 \
+      || fail "could not pip install playwright into $VENV_DIR (network, proxy or index?):
+$(log_tail)"
+  fi
+  "$vp" -m playwright install chromium >>"$WORK/venv.log" 2>&1 \
+    || fail "could not fetch the chromium build playwright drives:
+$(log_tail)"
+  can_import "$vp" || fail "$vp still cannot import playwright after installing it:
+$(log_tail)"
+  PYTHON="$vp"
+  note "python: $PYTHON (self-provisioned)"
+}
+resolve_python
 
 # serve <dir> <portfile> -> echoes the base url once the origin answers
 serve() {
