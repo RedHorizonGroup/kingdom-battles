@@ -143,6 +143,12 @@ function doctrine(id) { return doctrines.find(item => item.id === id); }
 function family(id) { return families.find(item => item.id === id); }
 function income() { return state.buildings.reduce((sum, id) => sum + (family(id)?.income || 0), 0); }
 function upkeep() { return state.units.length * 3; }
+/* The field manual (index.html:45) promises income "minus the upkeep of the troops
+ * you store". Gross and charge are resolved in one place so the tick and the header
+ * can never disagree again: the tick spends the whole net, the HUD shows the same net. */
+function turnGross() { return Math.max(1, income()); }
+function netRate() { return turnGross() - upkeep(); }
+function signed(value) { return `${value > 0 ? '+' : ''}${value}`; }
 function upgradeBonus(stat) { return state.upgrades.reduce((sum, id) => sum + (upgrades.find(u => u.id === id)?.[stat] || 0), 0); }
 function baseCrowns(level) { return 1000 + level * 1000; }
 function setToast(message) { const toast = document.querySelector('#battleToast'); if (toast) toast.textContent = message; }
@@ -181,9 +187,9 @@ function renderResources() {
   $('#buildingCount').textContent = `${state.buildings.length} / ${families.length}`;
   $('#garrisonCount').textContent = `${state.units.length} / ${MAX_GARRISON}`;
   $('#upkeepCount').textContent = money(upkeep());
-  $('#incomeCount').textContent = `+${income()}`;
+  $('#incomeCount').textContent = signed(netRate());
   const next = families.find(item => !state.buildings.includes(item.id) && unlocked(item.requires));
-  $('#capitalTip').textContent = next ? `Next: ${next.name} extends your doctrine.` : state.buildings.length ? `Income +${income()} crowns each turn. Keep a reserve for the field.` : 'Build Barracks first to place a Scout on the roster.';
+  $('#capitalTip').textContent = next ? `Next: ${next.name} extends your doctrine.` : state.buildings.length ? `Net ${signed(netRate())} crowns each turn, after the upkeep of ${state.units.length} stored troop${state.units.length === 1 ? '' : 's'}. Keep a reserve for the field.` : 'Build Barracks first to place a Scout on the roster.';
 }
 function renderBuildings() {
   $('#buildingList').innerHTML = families.map(item => {
@@ -410,7 +416,11 @@ window.addEventListener('keydown', event => {
 
 setInterval(() => {
   if (state.view === 'capital' || state.view === 'tree' || state.view === 'world') {
-    state.crowns = Math.max(0, state.crowns + Math.max(1, income()));
+    /* The one place capital accrues per firing. Income and the upkeep the manual
+     * promises are netted here in a single expression, floored at 0 so a drained
+     * capital is a budget problem, not a negative-crowns or soft-lock state. */
+    const gross = turnGross();
+    state.crowns = Math.max(0, state.crowns + gross - upkeep());
     save(); render();
   }
 }, 4000);
