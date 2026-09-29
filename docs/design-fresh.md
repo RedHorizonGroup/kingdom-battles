@@ -33,7 +33,10 @@ capital income + buildings -> prerequisite combinations -> doctrine roster
 3. Class tree: browser assertions observe all 12 doctrines and all 15 family names. For every doctrine, its full `requires` array must be visible in the locked hint and unlocking must occur only after every required family is owned.
 4. Battle: browser trace enters battle, deploys units, uses Focus lane, Rally, and Keep volley, observes visible turn/enemy/player state and unit markers, and reaches both victory and defeat with the deterministic fixture interactions.
 5. Art/design: source and rendered screenshots show distinct inline SVG crests for all 15 building families and 12 doctrines, multiple colors, responsive layout, focusable controls, and reduced-motion behavior.
-6. PWA/offline: localhost responses for manifest and service worker; cache keys include all shell assets; offline reload serves `index.html` and the service worker cache version is `cinderwatch-v4`.
+6. PWA/offline: localhost responses for manifest and service worker; cache keys include all shell assets; offline reload serves `index.html` and the service worker cache version is
+   `kingdom-battles-cinderwatch-v5` (bumped from v4 on 2026-09-29 so returning players
+   actually receive the fixed `game.js`; the localStorage save key is deliberately still
+   `kingdom-battles-cinderwatch-v4` so campaigns survive the bump).
 7. Save/fullscreen: reload preserves version 4 capital state; fullscreen click records resolved or explicit unsupported result; install control handles both browser prompt and fallback instructions.
 8. Quality/delivery: console has zero page errors; 375px and desktop layouts render; the delivery manifest binds the new remote `main` head, deployment id, embedded `BUILD 4` marker, and live URL, all independently checked.
 
