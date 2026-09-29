@@ -66,10 +66,10 @@ status: verified-by-execution
   load (its reward is already banked, so it can never pay out twice) and a corrupt or
   partial `battle` object is discarded rather than rendered.
 - **Regression test.** `tests/qa/run-regression.sh` exits 0 on this branch and non-zero
-  against `game.js` at `703e6b2`: 8/8 checks pass on the fixed build, 5 fail on the
-  pre-fix build (m-key crowns, absent hooks, m-key in battle, battle refresh, single
-  payout). `tests/qa/qa_contract.py` is unchanged apart from its `?kbdev=1` opt-in and
-  still passes 8/8.
+  against `game.js` at `703e6b2`: 10/10 checks pass on the fixed build, 7 fail on the
+  pre-fix build (m-key crowns, absent hooks, m-key in battle, battle refresh, restored
+  unit name/colour, partial-save units, single payout). `tests/qa/qa_contract.py` passes
+  8/8; it needed two edits, the `?kbdev=1` opt-in and the v4→v5 cache assertion.
 
 ## 2026-09-29 — cache and asset version bumped so the fixed game.js reaches returning players (branch fix/crown-cheat-and-battle-save-integrity)
 
