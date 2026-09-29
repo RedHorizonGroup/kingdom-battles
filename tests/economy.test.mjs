@@ -104,6 +104,15 @@ eq('turn tick registered', timers.length === 1 && timers[0].ms === 4000, true);
   eq('net HUD at full garrison', text('#incomeCount'), `${net}`);
   check('HUD rate equals the real per-turn movement', `${text('#incomeCount')}` === `${net}`,
     `#incomeCount ${text('#incomeCount')} vs realised ${crowns() - before}`);
+  /* Every surface that quotes a per-turn rate must quote the NET. The world-map hint
+   * (game.js:248) used to render gross income(), which told a player bleeding 4/firing
+   * that they had "20/turn" to spend. The same lie, one screen over. */
+  check('capital field note quotes the net, not gross', text('#capitalTip').includes(`${net}`),
+    `#capitalTip ${JSON.stringify(text('#capitalTip'))}`);
+  scenario({ buildings: ALL_FAMILIES, units: ALL_TROOPS.slice(0, GARRISON), starting: before, view: 'world' });
+  check('world-map hint quotes the net, not gross', text('#worldHint').includes(`${net}`),
+    `#worldHint ${JSON.stringify(text('#worldHint'))}`);
+  KB.show('capital');
 }
 
 /* 2. A smaller roster is net POSITIVE, and successive firings compound. */

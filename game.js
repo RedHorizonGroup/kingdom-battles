@@ -245,7 +245,7 @@ function renderWorld() {
     const [x, y] = positions[i];
     return `<button class="level-node ${cleared ? 'cleared' : ''} ${current ? 'current' : ''} ${locked ? 'locked' : ''}" style="left:${x}%;top:${y}%" data-level="${level}" ${locked ? 'disabled' : ''} aria-label="Level ${level}${cleared ? ' cleared' : ''}"><b>${level}</b><small>${cleared ? 'cleared' : current ? 'march' : 'locked'}</small></button>`;
   }).join('');
-  $('#worldHint').textContent = state.buildings.length ? `Level ${state.level} is ready. Spend your ${income()}/turn wisely — the pass only fields what the tree unlocks.` : 'Raise your capital first — the field only fields what the tree unlocks.';
+  $('#worldHint').textContent = state.buildings.length ? `Level ${state.level} is ready. Spend your ${signed(netRate())} net crowns/turn wisely — the pass only fields what the tree unlocks.` : 'Raise your capital first — the field only fields what the tree unlocks.';
 }
 function battleState() { return state.battle || { enemy: 100, player: 100, units: [], turn: 0, boost: 0, focused: false, controlled: -1, ended: '' }; }
 function renderBattle() {
