@@ -6,6 +6,7 @@ fails, which is what happens against the pre-fix game.js.
 Usage: regression_crown_cheat.py <base_url> [evidence_dir]
 """
 import json
+import re
 import sys
 from pathlib import Path
 
@@ -40,6 +41,32 @@ def banked(page, view):
         f"() => {{ KB.show({json.dumps(view)}); return {{ crowns: KB.state.crowns, renown: KB.state.renown,"
         f" cleared: KB.state.cleared.slice(), level: KB.state.level,"
         f" battle: KB.state.battle, view: KB.state.view }}; }}")
+
+
+# renderBattle interpolates unit.name into title= and unit.color into
+# --unit-color=, so a restored unit missing either renders as 'undefined'.
+CHIPS = """() => [...document.querySelectorAll('#unitLayer .unit')].map(node => ({
+    title: node.getAttribute('title') || '',
+    color: (node.style.getPropertyValue('--unit-color') || '').trim(),
+    style: node.getAttribute('style') || '' }))"""
+HEX = re.compile(r"^#[0-9a-fA-F]{3,8}$")
+
+
+def chips(page):
+    return page.evaluate(CHIPS)
+
+
+def real_chips(rendered, units):
+    """True when every restored unit painted a chip with a real title and a real
+    --unit-color — the fields renderBattle reads off the restored unit."""
+    if not rendered or len(rendered) != len(units):
+        return False
+    return all(c["title"] and c["title"] != "undefined" and HEX.match(c["color"])
+               and "undefined" not in c["style"] for c in rendered)
+
+
+def chip_detail(rendered):
+    return ", ".join(f"title={c['title']!r} --unit-color={c['color']!r}" for c in rendered) or "no unit chips rendered"
 
 
 with sync_playwright() as p:
@@ -104,6 +131,32 @@ with sync_playwright() as p:
           f"view={resumed_view}, units={[u['id'] for u in (resumed or {}).get('units', [])]}, "
           f"turn={(resumed or {}).get('turn')}, enemy={(resumed or {}).get('enemy')}, "
           f"player={(resumed or {}).get('player')}, crowns={resumed_crowns}")
+
+    # -- the resumed units must paint a real title and a real --unit-color ----
+    resumed_units = (resumed or {}).get("units", [])
+    resumed_chips = chips(page)
+    check("d-restored-units-render-name-and-color", real_chips(resumed_chips, resumed_units),
+          f"{len(resumed_chips)} chip(s) for {len(resumed_units)} restored unit(s) after the refresh: "
+          f"{chip_detail(resumed_chips)}")
+
+    # -- a partial save must not restore units that render as "undefined" ----
+    # id+power is the minimum a save needs; name/crest/color are display fields
+    # a stale or hand-edited save can be missing, and they come from the
+    # doctrine table rather than from the save.
+    page.evaluate("""() => {
+        const key = 'kingdom-battles-cinderwatch-v4';
+        const s = JSON.parse(localStorage.getItem(key));
+        s.view = 'battle';
+        s.battle = { enemy: 60, player: 80, turn: 2, boost: 0, focused: false, controlled: -1,
+                     ended: '', units: [{ id: 'scout', power: 8 }, { id: 'archer', power: 12 }] };
+        localStorage.setItem(key, JSON.stringify(s));
+    }""")
+    page.reload(wait_until="networkidle")
+    partial = page.evaluate("() => ({ units: (KB.state.battle || {}).units || [] })")
+    partial_chips = chips(page)
+    check("d-partial-save-units-are-rebuilt", real_chips(partial_chips, partial["units"]),
+          f"save stripped to id+power, restored {[u['id'] for u in partial['units']]} as "
+          f"{len(partial_chips)} chip(s): {chip_detail(partial_chips)}")
 
     # -- (e) a finished battle pays out once, not again on reload ------------
     for _ in range(8):

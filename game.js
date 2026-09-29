@@ -128,12 +128,25 @@ function sanitizeBattle(raw) {
   if (!num(raw.enemy) || !num(raw.player) || !num(raw.turn) || !Array.isArray(raw.units)) return null;
   return {
     enemy: Math.max(0, raw.enemy), player: Math.max(0, raw.player), turn: Math.max(0, raw.turn),
-    units: raw.units.filter(u => u && typeof u.id === 'string' && num(u.power)).slice(0, MAX_GARRISON),
+    units: raw.units.map(sanitizeUnit).filter(Boolean).slice(0, MAX_GARRISON),
     boost: num(raw.boost) ? Math.max(0, raw.boost) : 0,
     focused: !!raw.focused,
     controlled: Number.isInteger(raw.controlled) ? raw.controlled : -1,
     ended: raw.ended === 'victory' || raw.ended === 'defeat' ? raw.ended : ''
   };
+}
+/* renderBattle paints a unit from unit.name and unit.color, so a save that
+ * carries only id+power (an older build, a hand-edited save) used to restore
+ * chips titled "undefined" with --unit-color:undefined. Those display fields
+ * come from the doctrine table, which is the authority; the save only picks
+ * which doctrine and how much power it had. */
+function sanitizeUnit(raw) {
+  const num = value => typeof value === 'number' && Number.isFinite(value);
+  if (!raw || typeof raw.id !== 'string') return null;
+  const item = doctrine(raw.id);
+  if (!item) return null;
+  return { id: item.id, name: item.name, crest: item.crest, color: item.color,
+           power: num(raw.power) ? Math.max(0, raw.power) : item.power };
 }
 function load() {
   try {
