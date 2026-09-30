@@ -46,3 +46,66 @@ preview. The preview was produced with `vercel deploy` from the branch working t
 production with `vercel --prod` after merging to `main`. The non-circular sequence holds:
 the preview proved the build, production proved the delivery, and point 8 was evaluated on
 the production URL.
+
+## 2026-09-29 — crown cheat removed, battle save no longer forfeited (branch fix/crown-cheat-and-battle-save-integrity)
+
+```yaml
+branch: fix/crown-cheat-and-battle-save-integrity
+base: main (0cf9584)
+scope: game.js, tests/qa/, README.md, docs/delivery-manifest.md
+status: verified-by-execution
+```
+
+- **Defect.** `game.js` bound a global `keydown` handler that added 2 crowns per `m`
+  press with no dev flag, no cap and no view gate, and `save()` wrote
+  `{ ...state, battle: null }`, so any save during a battle silently discarded that
+  battle. `window.KB.grantCrowns` / `setState` were exported to every player load.
+- **Fix.** The `m` handler is deleted. `grantCrowns` and `setState` are attached only
+  when the URL carries `?kbdev=1`. `save()` persists the live battle and `load()`
+  restores it, so a mid-battle refresh resumes the fight; an ended battle is dropped on
+  load (its reward is already banked, so it can never pay out twice) and a corrupt or
+  partial `battle` object is discarded rather than rendered.
+- **Regression test.** `tests/qa/run-regression.sh` exits 0 on this branch and non-zero
+  against `game.js` at `703e6b2`: 10/10 checks pass on the fixed build, 7 fail on the
+  pre-fix build (m-key crowns, absent hooks, m-key in battle, battle refresh, restored
+  unit name/colour, partial-save units, single payout). `tests/qa/qa_contract.py` passes
+  8/8; it needed two edits, the `?kbdev=1` opt-in and the v4→v5 cache assertion.
+
+## 2026-09-29 — cache and asset version bumped so the fixed game.js reaches returning players (branch fix/crown-cheat-and-battle-save-integrity)
+
+```yaml
+branch: fix/crown-cheat-and-battle-save-integrity
+base: main (0cf9584) + 4c4326d, 8a4a355
+scope: sw.js, index.html, game.js, tests/qa/qa_contract.py, docs/delivery-manifest.md
+status: verified-by-execution
+```
+
+- **Defect.** The fix above shipped new bytes for `game.js`, but nothing invalidated the
+  service worker. `sw.js` kept the cache name `kingdom-battles-cinderwatch-v4` and
+  precached `./game.js?v=4`, and `index.html` requested `game.js?v=4` — the URL the v4
+  cache already held. A returning player was therefore served the **pre-fix** `game.js`
+  from cache and still had the `m` crown cheat reachable, with no way to tell.
+- **Fix.** `sw.js` `CACHE` is now `kingdom-battles-cinderwatch-v5`, `kingdom-battles-cinderwatch-v4`
+  is prepended to `OLD_CACHES` so `activate` deletes it, and the precached asset is
+  `./game.js?v=5`; `index.html` requests `game.js?v=5`. `game.js` `CACHE_NAME` moves to
+  `kingdom-battles-cinderwatch-v5` so it names the cache the worker actually opens.
+- **Save key deliberately unchanged.** The localStorage save key stays
+  `kingdom-battles-cinderwatch-v4` (`game.js` `KEY`). It used to be the same *string* as
+  the old cache name, so a find-and-replace bump would have silently renamed the save
+  key and reset every returning player's campaign. `KEY` now carries a comment saying so.
+- **Verified by execution.** A returning-player replay, on one origin and one browser
+  profile: load the pre-fix build (`sw.js` v4, `game.js` at `703e6b2`, with the `m` cheat)
+  and seed a real v4-keyed save; then swap the served tree to this build and reload. The
+  player receives the fixed `game.js` (`m` cheat gone, `KB.grantCrowns` absent, script
+  `game.js?v=5`), the v4 cache is purged, and the v4-keyed save (7777 crowns, 2 levels
+  cleared) loads into memory intact. `tests/qa/qa_contract.py` passes 8/8 with
+  `caches=['kingdom-battles-cinderwatch-v5']`; `bash tests/qa/run-regression.sh` exits 0.
+- **Regression runner is self-provisioning.** The first version of `run-regression.sh`
+  hard-failed when the ambient `python3` had no `playwright`, which is not hypothetical:
+  the rig venv was rebuilt mid-task and lost it, and check c1 went red on the close
+  gate's own re-run. It now resolves its own interpreter — an explicit `PYTHON` is used
+  as-is, an ambient `python3` that already imports `playwright` is left alone, and
+  anything else is provisioned into a kept venv (`$XDG_CACHE_HOME/kingdom-battles-qa/venv`)
+  with `playwright install chromium`. Verified from a cold cache with an empty
+  `PLAYWRIGHT_BROWSERS_PATH`: 590 MB fetched, exit 0 in 2:49, 10/10 then 3/10. Set
+  `KB_BOOTSTRAP=0` to forbid installing, or `KB_VENV_DIR` to relocate the venv.

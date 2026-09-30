@@ -34,3 +34,18 @@ a3e8e7c Build Kingdom Battles fresh game
 $ grep -rn "kingdom-battles-cinderwatch-v4" game.js sw.js | wc -l
 2
 ```
+
+## Addendum — 2026-09-29 (branch `fix/crown-cheat-and-battle-save-integrity`)
+
+The identity claim above is a record of BUILD 4 as verified on 2026-09-22, and the
+reproduced block is left exactly as it was run. Since then:
+
+- The **service-worker cache** moved `kingdom-battles-cinderwatch-v4` → `-v5`, and
+  `game.js` is now requested as `game.js?v=5`. Without this, `sw.js` is cache-first and
+  the unmodified worker would have kept serving returning players the pre-fix
+  `game.js?v=4` — the crown cheat would have stayed live in the installed base.
+- The **localStorage save key** is deliberately *still* `kingdom-battles-cinderwatch-v4`
+  (and `KEY_V3` still `-v3`) so every returning campaign survives the cache bump. The two
+  strings used to be identical, which makes a careless global rename silently reset
+  everyone's progress; `game.js` now carries a comment saying so.
+- The `grep | wc -l → 2` result above no longer holds, for the same reason.
