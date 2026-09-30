@@ -336,7 +336,7 @@ try {
   cdp = await CDP.open(launched.wsUrl);
 
   const { sessionId } = await newPageSession(cdp);
-  const url = `${site.origin}/index.html`;
+  const url = `${site.origin}/index.html?kbdev=1`; // KB.setState is a dev hook gated behind ?kbdev=1
   await load(cdp, sessionId, url);
   check('served build booted in real Chrome', true, `${launched.bin} · ${url}`);
 

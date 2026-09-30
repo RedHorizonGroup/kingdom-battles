@@ -52,6 +52,9 @@ const sandbox = {
     removeItem: key => storage.delete(key)
   },
   navigator: {},
+  // The dev hooks (KB.setState) this test stages state through are gated behind ?kbdev=1.
+  location: { search: '?kbdev=1' },
+  URLSearchParams,
   matchMedia: () => ({ matches: false })
 };
 sandbox.window = sandbox;
