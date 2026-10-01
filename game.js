@@ -456,9 +456,16 @@ document.addEventListener('click', event => {
 setInterval(() => {
   if (state.view === 'capital' || state.view === 'tree' || state.view === 'world') {
     /* The one place capital accrues per firing. Income and the upkeep the manual
-     * promises are netted here in a single expression, floored at 0 so a drained
-     * capital is a budget problem, not a negative-crowns or soft-lock state. */
+     * promises are netted here in a single expression, floored at 0. A turn the
+     * treasury cannot cover costs the newest stored troop (it deserts), so an
+     * unpaid garrison shrinks until net turns positive again: at 0 crowns no
+     * doctrine can be deployed, and without this a drained capital could never
+     * win the battle that would refill it. */
     const gross = turnGross();
+    if (state.crowns + gross < upkeep() && state.units.length) {
+      const deserter = doctrine(state.units.pop());
+      setToast(`Upkeep unpaid · ${deserter ? deserter.name : 'a troop'} deserted the garrison.`);
+    }
     state.crowns = Math.max(0, state.crowns + gross - upkeep());
     save(); render();
   }

@@ -131,14 +131,23 @@ eq('turn tick registered', timers.length === 1 && timers[0].ms === 4000, true);
   eq('net HUD at light roster', text('#incomeCount'), `+${net}`);
 }
 
-/* 3. The floor holds: a drained capital is pinned at 0, never negative. */
+/* 3. The floor holds and never soft-locks: an unpaid turn costs a troop, so a
+ *    drained capital sheds garrison until net turns positive and crowns climb. */
 {
-  const before = scenario({ buildings: ALL_FAMILIES, units: ALL_TROOPS.slice(0, GARRISON), starting: 2 });
+  scenario({ buildings: ALL_FAMILIES, units: ALL_TROOPS.slice(0, GARRISON), starting: 2 });
   fire();
-  eq('net-negative turn floors at 0', crowns(), 0);
+  eq('an unpaid turn pays the troops who stayed', crowns(), 2 + FULL_INCOME - (GARRISON - 1) * PER_UNIT_UPKEEP);
+  eq('an unpaid turn costs one stored troop', KB.state.units.length, GARRISON - 1);
+  let lowest = crowns();
+  for (let i = 0; i < 4; i++) { fire(); lowest = Math.min(lowest, crowns()); }
+  check('crowns never go negative', lowest >= 0, `lowest ${lowest}`);
+  const kept = KB.state.units.length;
+  check('garrison settles where net is positive', FULL_INCOME - kept * PER_UNIT_UPKEEP > 0, `${kept} troops kept`);
+  check('a drained capital recovers without a battle', crowns() > 0, `crowns ${crowns()} after 5 firings`);
+  eq('HUD shows the recovered rate', text('#incomeCount'), `+${FULL_INCOME - kept * PER_UNIT_UPKEEP}`);
+  const paid = scenario({ buildings: ALL_FAMILIES, units: ALL_TROOPS.slice(0, GARRISON), starting: 10 });
   fire();
-  check('floor holds across firings', crowns() === 0, `crowns stayed ${crowns()}`);
-  eq('HUD still shows the real rate while floored', text('#incomeCount'), `${FULL_INCOME - GARRISON * PER_UNIT_UPKEEP}`);
+  check('a covered turn keeps every troop', KB.state.units.length === GARRISON && crowns() === paid - 4, `units ${KB.state.units.length}, crowns ${crowns()}`);
 }
 
 /* 4. Bare capital still trickles: the tick's minimum income is not upkeep. */
