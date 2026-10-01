@@ -134,6 +134,9 @@ eq('turn tick registered', timers.length === 1 && timers[0].ms === 4000, true);
 /* 3. The floor holds and never soft-locks: an unpaid turn costs a troop, so a
  *    drained capital sheds garrison until net turns positive and crowns climb. */
 {
+  scenario({ buildings: ALL_FAMILIES, units: ALL_TROOPS.slice(0, GARRISON), starting: 0 });
+  fire();
+  eq('an unpaid turn floors at exactly 0', crowns(), 0);
   scenario({ buildings: ALL_FAMILIES, units: ALL_TROOPS.slice(0, GARRISON), starting: 2 });
   fire();
   eq('an unpaid turn pays the troops who stayed', crowns(), 2 + FULL_INCOME - (GARRISON - 1) * PER_UNIT_UPKEEP);
@@ -147,6 +150,24 @@ eq('turn tick registered', timers.length === 1 && timers[0].ms === 4000, true);
   check('garrison settles where net is positive', FULL_INCOME - kept * PER_UNIT_UPKEEP > 0, `${kept} troops kept`);
   check('a drained capital recovers without a battle', crowns() > 0, `crowns ${crowns()} after 5 firings`);
   eq('HUD shows the recovered rate', text('#incomeCount'), `+${FULL_INCOME - kept * PER_UNIT_UPKEEP}`);
+  /* A net of exactly 0 below the cheapest doctrine never grows and never deploys:
+   * that is the same dead end, so it thins the garrison too. */
+  const grossOf = buildings => { scenario({ buildings, units: [], starting: 0 }); return Number(text('#incomeCount')); };
+  /* the first run of families whose income is a whole number of troops' upkeep */
+  let evenFamilies = [], EVEN = 0;
+  for (let n = 1; n <= ALL_FAMILIES.length && !EVEN; n++) {
+    const gross = grossOf(ALL_FAMILIES.slice(0, n));
+    if (gross % PER_UNIT_UPKEEP === 0 && gross / PER_UNIT_UPKEEP <= GARRISON) { evenFamilies = ALL_FAMILIES.slice(0, n); EVEN = gross; }
+  }
+  scenario({ buildings: evenFamilies, units: ALL_TROOPS.slice(0, EVEN / PER_UNIT_UPKEEP), starting: 20 });
+  eq('fixture: net is exactly 0', text('#incomeCount'), '0');
+  for (let i = 0; i < 2; i++) fire();
+  check('a frozen net-0 capital sheds a troop and grows', KB.state.units.length < EVEN / PER_UNIT_UPKEEP && crowns() > 20,
+    `units ${KB.state.units.length}, crowns ${crowns()}`);
+  scenario({ buildings: evenFamilies, units: ALL_TROOPS.slice(0, EVEN / PER_UNIT_UPKEEP), starting: 500 });
+  fire();
+  check('a net-0 capital that can still field troops keeps them', KB.state.units.length === EVEN / PER_UNIT_UPKEEP && crowns() === 500,
+    `units ${KB.state.units.length}, crowns ${crowns()}`);
   const paid = scenario({ buildings: ALL_FAMILIES, units: ALL_TROOPS.slice(0, GARRISON), starting: 10 });
   fire();
   check('a covered turn keeps every troop', KB.state.units.length === GARRISON && crowns() === paid - 4, `units ${KB.state.units.length}, crowns ${crowns()}`);

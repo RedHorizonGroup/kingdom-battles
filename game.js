@@ -461,13 +461,15 @@ document.addEventListener('click', event => {
 setInterval(() => {
   if (state.view === 'capital' || state.view === 'tree' || state.view === 'world') {
     /* The one place capital accrues per firing. Income and the upkeep the manual
-     * promises are netted here in a single expression, floored at 0. A turn the
-     * treasury cannot cover costs the newest stored troop (it deserts), so an
-     * unpaid garrison shrinks until net turns positive again: at 0 crowns no
-     * doctrine can be deployed, and without this a drained capital could never
-     * win the battle that would refill it. */
+     * promises are netted here in a single expression, floored at 0. Deploying
+     * costs crowns, so a treasury below the cheapest doctrine cannot win the
+     * battle that would refill it. A garrison that strands it there (a turn the
+     * treasury cannot cover, or a net of exactly 0 that never lets it grow) loses
+     * its newest stored troop to desertion each turn until net is positive. */
     const gross = turnGross();
-    if (state.crowns + gross < upkeep() && state.units.length) {
+    const unpaid = state.crowns + gross < upkeep();
+    const frozen = netRate() === 0 && state.crowns < Math.min(...doctrines.map(d => d.cost));
+    if ((unpaid || frozen) && state.units.length) {
       const deserter = doctrine(state.units.pop());
       deserters.push(deserter ? deserter.name : 'a troop');
     }
