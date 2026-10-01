@@ -194,11 +194,10 @@ function netRate() { return turnGross() - upkeep(); }
 function signed(value) { return `${value > 0 ? '+' : ''}${value}`; }
 function upgradeBonus(stat) { return state.upgrades.reduce((sum, id) => sum + (upgrades.find(u => u.id === id)?.[stat] || 0), 0); }
 function baseCrowns(level) { return 1000 + level * 1000; }
-/* Troops that deserted over unpaid upkeep since the player last recruited. The tick
- * runs outside battle, where #battleToast is hidden, so the capital and world views
- * say it themselves. */
-let deserters = [];
-const desertionNote = () => deserters.length ? `Upkeep unpaid · ${deserters.join(', ')} deserted the garrison. ` : '';
+/* The latest desertion, until the player next recruits. The tick runs outside
+ * battle, where #battleToast is hidden, so the capital and world views say it. */
+let desertion = null;
+const desertionNote = () => desertion ? `${desertion.name} deserted: the treasury could not sustain the garrison${desertion.count > 1 ? ` (${desertion.count} troops lost)` : ''}. ` : '';
 function setToast(message) { const toast = document.querySelector('#battleToast'); if (toast) toast.textContent = message; }
 function $(sel) { return document.querySelector(sel); }
 function show(view) {
@@ -348,7 +347,7 @@ function claimAchievement(id) {
 function recruit(id) {
   const item = doctrine(id);
   if (!item || !unlocked(item.requires) || state.units.includes(id) || state.units.length >= MAX_GARRISON || state.crowns < item.cost) return;
-  state.crowns -= item.cost; state.units.push(id); deserters = [];
+  state.crowns -= item.cost; state.units.push(id); desertion = null;
   save(); render(); setToast(`${item.name} recruited to the roster.`);
 }
 function newBattle() { return { enemy: 100, player: 100 + upgradeBonus('health'), units: [], turn: 0, boost: 0, focused: false, controlled: -1, ended: '' }; }
@@ -471,7 +470,7 @@ setInterval(() => {
     const frozen = netRate() === 0 && state.crowns < Math.min(...doctrines.map(d => d.cost));
     if ((unpaid || frozen) && state.units.length) {
       const deserter = doctrine(state.units.pop());
-      deserters.push(deserter ? deserter.name : 'a troop');
+      desertion = { name: deserter ? deserter.name : 'A troop', count: (desertion ? desertion.count : 0) + 1 };
     }
     state.crowns = Math.max(0, state.crowns + gross - upkeep());
     save(); render();

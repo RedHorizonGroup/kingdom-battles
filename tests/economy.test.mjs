@@ -141,7 +141,7 @@ eq('turn tick registered', timers.length === 1 && timers[0].ms === 4000, true);
   fire();
   eq('an unpaid turn pays the troops who stayed', crowns(), 2 + FULL_INCOME - (GARRISON - 1) * PER_UNIT_UPKEEP);
   eq('an unpaid turn costs one stored troop', KB.state.units.length, GARRISON - 1);
-  check('the capital says who deserted', /Upkeep unpaid · .+ deserted the garrison/.test(text('#capitalTip')),
+  check('the capital says who deserted', /^\w[\w ]* deserted: the treasury could not sustain the garrison/.test(text('#capitalTip')),
     `#capitalTip ${JSON.stringify(text('#capitalTip'))}`);
   let lowest = crowns();
   for (let i = 0; i < 4; i++) { fire(); lowest = Math.min(lowest, crowns()); }
