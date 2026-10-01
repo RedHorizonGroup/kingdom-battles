@@ -194,6 +194,11 @@ function netRate() { return turnGross() - upkeep(); }
 function signed(value) { return `${value > 0 ? '+' : ''}${value}`; }
 function upgradeBonus(stat) { return state.upgrades.reduce((sum, id) => sum + (upgrades.find(u => u.id === id)?.[stat] || 0), 0); }
 function baseCrowns(level) { return 1000 + level * 1000; }
+/* Troops that deserted over unpaid upkeep since the player last recruited. The tick
+ * runs outside battle, where #battleToast is hidden, so the capital and world views
+ * say it themselves. */
+let deserters = [];
+const desertionNote = () => deserters.length ? `Upkeep unpaid · ${deserters.join(', ')} deserted the garrison. ` : '';
 function setToast(message) { const toast = document.querySelector('#battleToast'); if (toast) toast.textContent = message; }
 function $(sel) { return document.querySelector(sel); }
 function show(view) {
@@ -232,7 +237,7 @@ function renderResources() {
   $('#upkeepCount').textContent = money(upkeep());
   $('#incomeCount').textContent = signed(netRate());
   const next = families.find(item => !state.buildings.includes(item.id) && unlocked(item.requires));
-  $('#capitalTip').textContent = next ? `Next: ${next.name} extends your doctrine.` : state.buildings.length ? `Net ${signed(netRate())} crowns each turn, after the upkeep of ${state.units.length} stored troop${state.units.length === 1 ? '' : 's'}. Keep a reserve for the field.` : 'Build Barracks first to place a Scout on the roster.';
+  $('#capitalTip').textContent = desertionNote() + (next ? `Next: ${next.name} extends your doctrine.` : state.buildings.length ? `Net ${signed(netRate())} crowns each turn, after the upkeep of ${state.units.length} stored troop${state.units.length === 1 ? '' : 's'}. Keep a reserve for the field.` : 'Build Barracks first to place a Scout on the roster.');
 }
 function renderBuildings() {
   $('#buildingList').innerHTML = families.map(item => {
@@ -288,7 +293,7 @@ function renderWorld() {
     const [x, y] = positions[i];
     return `<button class="level-node ${cleared ? 'cleared' : ''} ${current ? 'current' : ''} ${locked ? 'locked' : ''}" style="left:${x}%;top:${y}%" data-level="${level}" ${locked ? 'disabled' : ''} aria-label="Level ${level}${cleared ? ' cleared' : ''}"><b>${level}</b><small>${cleared ? 'cleared' : current ? 'march' : 'locked'}</small></button>`;
   }).join('');
-  $('#worldHint').textContent = state.buildings.length ? `Level ${state.level} is ready. Spend your ${signed(netRate())} net crowns/turn wisely — the pass only fields what the tree unlocks.` : 'Raise your capital first — the field only fields what the tree unlocks.';
+  $('#worldHint').textContent = desertionNote() + (state.buildings.length ? `Level ${state.level} is ready. Spend your ${signed(netRate())} net crowns/turn wisely — the pass only fields what the tree unlocks.` : 'Raise your capital first — the field only fields what the tree unlocks.');
 }
 function battleState() { return state.battle || { enemy: 100, player: 100, units: [], turn: 0, boost: 0, focused: false, controlled: -1, ended: '' }; }
 function renderBattle() {
@@ -343,7 +348,7 @@ function claimAchievement(id) {
 function recruit(id) {
   const item = doctrine(id);
   if (!item || !unlocked(item.requires) || state.units.includes(id) || state.units.length >= MAX_GARRISON || state.crowns < item.cost) return;
-  state.crowns -= item.cost; state.units.push(id);
+  state.crowns -= item.cost; state.units.push(id); deserters = [];
   save(); render(); setToast(`${item.name} recruited to the roster.`);
 }
 function newBattle() { return { enemy: 100, player: 100 + upgradeBonus('health'), units: [], turn: 0, boost: 0, focused: false, controlled: -1, ended: '' }; }
@@ -464,7 +469,7 @@ setInterval(() => {
     const gross = turnGross();
     if (state.crowns + gross < upkeep() && state.units.length) {
       const deserter = doctrine(state.units.pop());
-      setToast(`Upkeep unpaid · ${deserter ? deserter.name : 'a troop'} deserted the garrison.`);
+      deserters.push(deserter ? deserter.name : 'a troop');
     }
     state.crowns = Math.max(0, state.crowns + gross - upkeep());
     save(); render();
